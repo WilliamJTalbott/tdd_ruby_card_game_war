@@ -29,6 +29,8 @@ describe WarSocketServer do
   before(:each) do
     @clients = []
     @server = WarSocketServer.new
+    @server.start
+    sleep 0.1 # ensure server is started
   end
 
   after(:each) do
@@ -39,11 +41,11 @@ describe WarSocketServer do
   end
 
   it "is not listening on a port before it is started"  do
+    @server.stop
     expect {MockWarSocketClient.new(@server.port_number)}.to raise_error(Errno::ECONNREFUSED)
   end
 
   it "accepts new clients and starts a game if possible" do
-    @server.start
     client1 = MockWarSocketClient.new(@server.port_number)
     @clients.push(client1)
     @server.accept_new_client("Player 1")
@@ -59,7 +61,6 @@ describe WarSocketServer do
   # Add more tests to make sure the game is being played
 
   it "tells pending player that he's waiting" do
-    @server.start
     client1 = MockWarSocketClient.new(@server.port_number)
     @server.accept_new_client("Player 1")
     expect(client1.capture_output).to eq("Welcome.  Waiting for another player to join.\n")
@@ -73,7 +74,6 @@ describe WarSocketServer do
 
   context "game started" do
     before(:each) do
-      @server.start
       client1 = MockWarSocketClient.new(@server.port_number)
       @clients.push(client1)
       @server.accept_new_client("Player 1")
