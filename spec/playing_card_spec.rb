@@ -1,10 +1,17 @@
 require_relative '../lib/playing_card'
 
 describe 'PlayingCard' do
-  it "Has rank and Suit" do
+  it "has rank and Suit" do
     card = PlayingCard.new("A", "Clubs")
     expect(card.rank).to eq "A"
     expect(card.suit).to eq "Clubs"
+  end
+
+  it "sets correct value" do
+    card1 = PlayingCard.new("A", "Clubs")
+    card2 = PlayingCard.new("2", "Clubs")
+    expect(card1.value).to eq 12
+    expect(card2.value).to_not eq 12
   end
 
   it 'card of the same rank and suit are equal' do

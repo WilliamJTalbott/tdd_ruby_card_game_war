@@ -1,5 +1,5 @@
  class PlayingCard
-   attr_reader :rank, :suit
+   attr_reader :rank, :suit, :value
 
   class InvalidRank < StandardError; end
   class InvalidSuit < StandardError; end
@@ -12,6 +12,7 @@
     raise InvalidSuit unless SUITS.include?(suit)
     @rank = rank
     @suit = suit
+    @value = RANKS.index(rank)
    end
 
    def ==(other_card)
