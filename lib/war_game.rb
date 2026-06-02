@@ -6,9 +6,9 @@ class WarGame
 
   attr_accessor :winner, :players, :deck, :table
   
-  def initialize()
+  def initialize(name1 = "Bob", name2 = "Tom")
     @winner = nil
-    @players = [WarPlayer.new("Bob"), WarPlayer.new("Tom")]
+    @players = [WarPlayer.new(name1), WarPlayer.new(name2)]
     @deck = CardDeck.new()
     @table = []
   end
