@@ -1,12 +1,14 @@
-recursion for ties
-spaceship operator
 
 TODO
 Remove method.method.method in tests
-Add describing contexts for test
-Create tests for play_round that require a value returned for war runner to PUT
+Create tests to detect rare win issues. 
+    tie on last round (Might be fine as is)
+    complete ties
+
+Add before hooks
+
+
 
 
 RULES
-
 No Instance Variables
