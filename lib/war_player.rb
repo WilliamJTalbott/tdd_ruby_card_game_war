@@ -10,4 +10,12 @@ class WarPlayer
     @hand = []
   end
 
+  def play_card()
+    hand.pop
+  end
+
+  def win_cards(cards)
+    @hand = (cards.shuffle) + hand
+  end
+
 end

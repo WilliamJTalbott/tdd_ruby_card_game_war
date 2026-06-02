@@ -33,7 +33,7 @@ describe 'WarGame' do
 
   describe 'play_round' do
 
-    it "higher card player gets all cards" do
+    it "player1 wins with higher card" do
       game = WarGame.new
       game.player1.hand = [PlayingCard.new("3", "Clubs")]
       game.player2.hand = [PlayingCard.new("2", "Clubs")]
@@ -42,13 +42,49 @@ describe 'WarGame' do
       expect(game.player2.hand.empty?).to eq true
     end
 
-    it "repeats on a tie until there is a winner" do
+
+    it "player2 wins with higher card" do
       game = WarGame.new
-      game.player1.hand = [PlayingCard.new("3", "Hearts"), PlayingCard.new("A", "Hearts")]
-      game.player2.hand = [PlayingCard.new("2", "Clubs"), PlayingCard.new("A", "Clubs")]
+      game.player1.hand = [PlayingCard.new("5", "Clubs")]
+      game.player2.hand = [PlayingCard.new("A", "Clubs")]
 
       game.play_round()
-      expect(game.player2.hand.empty?).to eq true
+      expect(game.player1.hand.empty?).to eq true
+    end
+
+    it "Outputs text on a win" do
+      game = WarGame.new
+      game.player1.hand = [PlayingCard.new("7", "Clubs")]
+      game.player2.hand = [PlayingCard.new("Q", "Diamonds")]
+
+      expect(game.play_round).to eq "7 vs Q. Tom wins the round!"
+    end
+
+    it "outputs text on tie" do
+      game = WarGame.new
+      game.player1.hand = [PlayingCard.new("K", "Clubs")]
+      game.player2.hand = [PlayingCard.new("K", "Diamonds")]
+
+      expect(game.play_round).to eq "K vs K. It's a tie!"
+    end
+
+    it "stores cards on tie" do
+      game = WarGame.new
+      cards = [PlayingCard.new("K", "Clubs"), PlayingCard.new("K", "Diamonds")]
+      game.player1.hand = [cards.first]
+      game.player2.hand = [cards.last]
+      game.play_round
+
+      expect(game.table = cards)
+    end
+
+    it "a winner is selected" do
+      game = WarGame.new
+      game.player1.hand = [PlayingCard.new("A", "Clubs")]
+      game.player2.hand = [PlayingCard.new("5", "Clubs")]
+
+      game.play_round()
+      expect(game.winner).to eq game.player1
     end
 
   end

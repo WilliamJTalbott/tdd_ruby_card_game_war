@@ -4,13 +4,14 @@ require_relative '../lib/playing_card'
 
 class WarGame
 
-  attr_reader :player1, :player2, :deck, :winner
+  attr_accessor :winner, :player1, :player2, :deck, :table
   
   def initialize()
     @winner = nil
     @player1 = WarPlayer.new("Bob")
     @player2 = WarPlayer.new("Tom")
     @deck = CardDeck.new()
+    @table = []
   end
 
   def start()
@@ -18,24 +19,33 @@ class WarGame
     deal_cards()
   end
 
-  def play_round(pot_cards = nil)
+  def play_round()
 
-    card1 = player1.hand.pop
-    card2 = player2.hand.pop
-
-    #TODO ask for advice on magic name
-    #rw = Round Winner
-    rw = nil
+    card1 = player1.play_card
+    card2 = player2.play_card
+    round_winner = nil
+    round_loser = nil
 
     result = card1.value <=> card2.value
-    round_cards = [pot_cards, card1, card2]
+    round_cards = [*@table, card1, card2]
+    prefix = "#{card1.rank} vs #{card2.rank}. "
+    suffix = ""
 
     if result == 0
-      return play_round(round_cards)
+      @table = round_cards
+      suffix = "It's a tie!"
     else
-      result == 1 ? rw = @player1 : rw = @player2
-      rw.hand = ([round_cards].shuffle) + rw.hand
+      result == 1 ? round_winner = @player1 : round_winner = @player2
+      round_winner.win_cards(round_cards)
+      @table = []
+      suffix = "#{result == 1 ? @player1.name : @player2.name} wins the round!"
     end
+
+    round_winner == @player1 ? round_loser = @player2 : round_loser = @player1
+    @winner = round_winner if round_loser.hand.empty?
+
+    return prefix + suffix
+
   end
 
   def deal_cards()
