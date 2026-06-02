@@ -27,7 +27,7 @@ class WarSocketServer
 
   def accept_new_client(player_name)
     client = {
-      terminal: @server.accept_nonblock, #TCP SOCKET CLASS
+      socket: @server.accept_nonblock, #TCP SOCKET CLASS
       name: player_name,
       ready: false,
       message_given: false
@@ -36,7 +36,7 @@ class WarSocketServer
     clients << client
 
     # associate player and client
-    client[:terminal].puts "Welcome to War!"
+    client[:socket].puts "Welcome to War!"
   rescue IO::WaitReadable, Errno::EINTR
     puts "No client to accept"
   end
@@ -46,7 +46,7 @@ class WarSocketServer
     return unless clients.count == CLIENTS_PER_GAME
 
     clients.each do |client|
-      client[:terminal].puts "War is starting..."
+      client[:socket].puts "War is starting..."
     end
 
     game = WarGame.new(clients[0][:name], clients[1][:name])
@@ -56,19 +56,25 @@ class WarSocketServer
 
   end
 
-  def process_input
-    clients.first[:terminal].gets.chomp
+  def get_input(client)
+    socket = client[:socket]
+    input = IO.select([socket], nil, nil, 0)
+    return nil unless input
+    
+    socket.gets
+    
   end
 
   def run_game(game)
 
     clients.each do |client|
-      client[:terminal].puts "Are you ready?" unless client[:message_given]
+      client[:socket].puts "Are you ready?" unless client[:message_given]
       client[:message_given] = true
+
+      client[:ready] = true unless get_input(client).nil?
     end
 
-    return unless clients.all? { |h| h[:ready] == true }
-    
+    return "called play_round" unless clients.all? { |h| h[:ready] == true }
   end
 
   def stop

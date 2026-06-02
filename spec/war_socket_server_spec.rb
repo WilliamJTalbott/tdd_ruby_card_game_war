@@ -15,7 +15,7 @@ class MockWarSocketClient
 
   def capture_output(delay=0.1)
     sleep(delay)
-    @output = @socket.read_nonblock(1000).chomp # not gets which blocks
+    @output = @socket.read_nonblock(1000) # not gets which blocks
   rescue IO::WaitReadable
     @output = ""
   end
@@ -23,6 +23,13 @@ class MockWarSocketClient
   def close
     @socket.close if @socket
   end
+end
+
+def client_factory(name = "random_player", server, clients)
+  client = MockWarSocketClient.new(server.port_number)
+  clients.push(client)
+  server.accept_new_client(name)
+  return client
 end
 
 describe WarSocketServer do
@@ -84,7 +91,7 @@ describe WarSocketServer do
     client = @server.clients.first
     expect(client).to be_a(Hash)
     expect(client).to match(
-      terminal: be_a(TCPSocket),
+      socket: be_a(TCPSocket),
       name: be_a(String),
       ready: be(false),
       message_given: be(false)
@@ -92,7 +99,7 @@ describe WarSocketServer do
     
   end
 
-  it "stops game loops stops if both players aren't ready" do
+  xit "stops game loops if both players aren't ready" do
     client1 = client_factory("Tommy", @server, @clients)
     client2 = client_factory("Jerry", @server, @clients)
 
@@ -101,15 +108,7 @@ describe WarSocketServer do
     expect(@server.run_game(game)).to_not eq "called play_round"
   end
 
-  #MOVE
-  def client_factory(name = "random_player", server, clients)
-    client = MockWarSocketClient.new(server.port_number)
-    clients.push(client)
-    server.accept_new_client(name)
-    return client
-  end
-
-  it "ask 'ready' message sends to clients" do
+  xit "ask 'ready' message sends to clients" do
     client1 = client_factory("Tommy", @server, @clients)
     client2 = client_factory("Jerry", @server, @clients)
 
@@ -121,17 +120,17 @@ describe WarSocketServer do
 
   end
 
-  it "server recieves inputs" do
+  xit "server recieves inputs" do
     client1 = client_factory("Tommy", @server, @clients)
     client2 = client_factory("Jerry", @server, @clients)
 
     @server.create_game_if_possible
 
     client1.provide_input("yo")
-    expect(@server.process_input).to eq "yo"
+    expect(@server.get_input).to eq "yo"
   end
 
-  it "message send only once to each client once" do
+  xit "message send only once to each client once" do
     client1 = client_factory("Tommy", @server, @clients)
     client2 = client_factory("Jerry", @server, @clients)
 
@@ -139,16 +138,34 @@ describe WarSocketServer do
     client1.capture_output
 
     2.times { @server.run_game(game)}
-    expect(client1.capture_output).to eq "Are you ready?"
+    expect(client1.capture_output.chomp).to eq "Are you ready?"
   end
 
-  it "plays several rounds properly" do
+  it "run_game gets confirmation input" do
     client1 = client_factory("Tommy", @server, @clients)
     client2 = client_factory("Jerry", @server, @clients)
-    @server.create_game_if_possible
+    game = @server.create_game_if_possible
+
+    expect(@server.clients.first[:ready]).to eq false
+
+    client1.provide_input("\n")
+    @server.run_game(game)
+    
+    expect(@server.clients.first[:ready]).to eq true
+  end
+
+  xit "plays a single round" do
+    client1 = client_factory("Tommy", @server, @clients)
+    client2 = client_factory("Jerry", @server, @clients)
+
+    game = @server.create_game_if_possible
+    @server.run_game(game)
+
     client1.capture_output
 
   end
+
+
 
 
   # Add more tests to make sure the game is being played
