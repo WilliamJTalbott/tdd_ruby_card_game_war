@@ -4,16 +4,19 @@ require_relative '../lib/war_player'
 require_relative '../lib/playing_card'
 
 describe 'WarGame' do
+  let(:game) {WarGame.new()}
+  let(:players) {game.players}
 
   describe 'initialize' do
     it "setups players" do
-      game = WarGame.new()
-      expect(game.player1).to be_a WarPlayer
-      expect(game.player2).to be_a WarPlayer
+      expect(players).to be_a Array
+      expect(players.length).to eq 2
+      players.each do |player|
+        expect(player).to be_a WarPlayer
+      end
     end
 
     it "sets up deck" do
-      game = WarGame.new()
       expect(game.deck).to be_a CardDeck
     end
 
@@ -21,12 +24,13 @@ describe 'WarGame' do
 
   describe 'start' do
     describe 'deal_cards' do
-      it "deals cards to each players hand" do
-        game = WarGame.new()
-        mid = CardDeck::FULL_COUNT
+      it "deals cards to equally to each players hand" do
+        amount = CardDeck::FULL_COUNT / players.length
+
         game.start()
-        expect(game.player1.hand.length).to eq (mid / 2)
-        expect(game.player2.hand.length).to eq (mid / 2)
+        players.each do |player|
+          expect(player.hand.length).to eq (amount)
+        end
       end
     end
   end
@@ -34,57 +38,82 @@ describe 'WarGame' do
   describe 'play_round' do
 
     it "player1 wins with higher card" do
-      game = WarGame.new
-      game.player1.hand = [PlayingCard.new("3", "Clubs")]
-      game.player2.hand = [PlayingCard.new("2", "Clubs")]
+      players[0].hand = [PlayingCard.new("3", "Clubs")]
+      players[1].hand = [PlayingCard.new("2", "Clubs")]
 
       game.play_round()
-      expect(game.player2.hand.empty?).to eq true
+      expect(players[1].hand.empty?).to eq true
     end
 
 
-    it "player2 wins with higher card" do
-      game = WarGame.new
-      game.player1.hand = [PlayingCard.new("5", "Clubs")]
-      game.player2.hand = [PlayingCard.new("A", "Clubs")]
+    it "players[1] wins with higher card" do
+      players[0].hand = [PlayingCard.new("5", "Clubs")]
+      players[1].hand = [PlayingCard.new("A", "Clubs")]
 
       game.play_round()
-      expect(game.player1.hand.empty?).to eq true
+      expect(players[0].hand.empty?).to eq true
     end
 
     it "Outputs text on a win" do
-      game = WarGame.new
-      game.player1.hand = [PlayingCard.new("7", "Clubs")]
-      game.player2.hand = [PlayingCard.new("Q", "Diamonds")]
-
-      expect(game.play_round).to eq "7 vs Q. Tom wins the round!"
+      players[0].hand = [PlayingCard.new("7", "Clubs")]
+      players[1].hand = [PlayingCard.new("Q", "Diamonds")]
+      output = game.play_round
+      text = "#{players[1].name} wins the round!"
+      expect(output).to end_with text
     end
 
     it "outputs text on tie" do
-      game = WarGame.new
-      game.player1.hand = [PlayingCard.new("K", "Clubs")]
-      game.player2.hand = [PlayingCard.new("K", "Diamonds")]
+      players[0].hand = [PlayingCard.new("K", "Clubs")]
+      players[1].hand = [PlayingCard.new("K", "Diamonds")]
+      output = game.play_round
+      expect(output).to end_with " It's a tie!"
+    end
 
-      expect(game.play_round).to eq "K vs K. It's a tie!"
+    it "always outputs played cards" do
+      players[0].hand = [PlayingCard.new("K", "Clubs")]
+      players[1].hand = [PlayingCard.new("A", "Diamonds")]
+      output = game.play_round
+      expect(output).to start_with "K vs A."
     end
 
     it "stores cards on tie" do
-      game = WarGame.new
       cards = [PlayingCard.new("K", "Clubs"), PlayingCard.new("K", "Diamonds")]
-      game.player1.hand = [cards.first]
-      game.player2.hand = [cards.last]
+      players[0].hand = [cards.first]
+      players[1].hand = [cards.last]
       game.play_round
 
-      expect(game.table = cards)
+      expect(game.table).to eq cards
     end
 
-    it "a winner is selected" do
-      game = WarGame.new
-      game.player1.hand = [PlayingCard.new("A", "Clubs")]
-      game.player2.hand = [PlayingCard.new("5", "Clubs")]
+    it "stored cards go to next winner" do
+      players[0].hand = [PlayingCard.new("K", "Clubs"), PlayingCard.new("K", "Diamonds")]
+      players[1].hand = [PlayingCard.new("Q", "Clubs"), PlayingCard.new("K", "Diamonds")]
+      game.play_round
+      game.play_round
+      expect(players[0].hand.length).to eq 4
+    end
+
+    it "a winner is selected on clear victory" do
+      players[0].hand = [PlayingCard.new("A", "Clubs")]
+      players[1].hand = [PlayingCard.new("5", "Clubs")]
 
       game.play_round()
-      expect(game.winner).to eq game.player1
+      expect(game.winner).to eq players[0]
+    end
+
+    it "a winner is selected if last round is a tie" do
+      players[0].hand = [PlayingCard.new("A", "Hearts"), PlayingCard.new("5", "Hearts")]
+      players[1].hand = [PlayingCard.new("5", "Clubs")]
+
+      game.play_round()
+      expect(game.winner).to eq players[0]
+    end
+
+    it "redeal if both players run out of cards" do
+      players[0].hand = [PlayingCard.new("A", "Clubs")]
+      players[1].hand = [PlayingCard.new("A", "Hearts")]
+      expect(game).to receive(:redeal)
+      game.play_round()
     end
 
   end
