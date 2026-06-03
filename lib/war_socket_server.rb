@@ -45,11 +45,11 @@ class WarSocketServer
 
     return unless clients.count == CLIENTS_PER_GAME
 
-    clients.each do |client|
-      client[:socket].puts "War is starting..."
-    end
+    clients.each { |client| client[:socket].puts "War is starting..." }
 
     game = WarGame.new(clients[0][:name], clients[1][:name])
+    game.start
+
     games << game
 
     game
@@ -60,7 +60,7 @@ class WarSocketServer
     socket = client[:socket]
     input = IO.select([socket], nil, nil, 0)
     return nil unless input
-    
+
     socket.gets
     
   end
@@ -70,11 +70,17 @@ class WarSocketServer
     clients.each do |client|
       client[:socket].puts "Are you ready?" unless client[:message_given]
       client[:message_given] = true
-
       client[:ready] = true unless get_input(client).nil?
     end
 
-    return "called play_round" unless clients.all? { |h| h[:ready] == true }
+    game.play_round if clients.all? { |h| h[:ready] == true }
+    
+    unless game.winner.nil?
+      clients.each do |client|
+        client[:socket].puts "Winner: #{game.winner.name}"
+      end
+      stop
+    end
   end
 
   def stop

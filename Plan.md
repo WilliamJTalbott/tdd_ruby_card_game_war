@@ -1,7 +1,7 @@
 
 TODO
 Create build player decks function in tests for cleaner code
-Ask what the heck that rule means.
+Write tests for run_game to make ensure that victory is met
 
 RULES
 No Instance Variables
