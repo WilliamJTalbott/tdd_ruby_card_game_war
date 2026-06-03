@@ -41,6 +41,7 @@ describe WarSocketServer do
   end
 
   after(:each) do
+    #Clients is not readable?
     @server.clients.each { |client| client[:socket].close }
     @server.stop
   end
@@ -139,10 +140,33 @@ describe WarSocketServer do
           game
           mock_client1.capture_output
           2.times { @server.run_round(game)}
-          expect(mock_client1.capture_output.chomp).to eq "Are you ready?"
+          expect(mock_client1.capture_output.chomp).to eq "Are you ready:"
       end
     end
 
+  end
+
+  describe "#ready?" do
+    let(:mock_client1) { client_factory("Tommy", @server) }
+    let(:mock_client2) { client_factory("Jerry", @server) }
+    let(:server_client1) { mock_client1; mock_client2; @server.clients[0] }
+    let(:server_client2) { mock_client1; mock_client2; @server.clients[1] }
+    let(:game) { server_client1; server_client2; @server.new_game_if_possible }
+    
+    context "run when clients are ready" do
+      it "returns true" do
+        server_client1[:ready] = true
+        server_client2[:ready] = true
+        expect(@server.ready?(game)).to eq true
+      end
+    end
+
+    context "a single clients is ready" do
+      it "returns false" do
+        server_client1[:ready] = true
+        expect(@server.ready?(game)).to eq false
+      end
+    end
   end
 
   describe "#game_over?" do
@@ -198,8 +222,22 @@ describe WarSocketServer do
 
         expect(@server).to receive(:stop).exactly(2).times
         @server.run_game(game)
+
       end
     end
   end
+
+  # describe "#send_output" do
+  #   let(:mock_client) {client_factory("Tommy", @server)}
+  #   let(:server_client) { mock_client; @server.clients.first}
+  #   context "when a message is sent with one client" do
+  #     it "receives it" do
+
+  #       mock_client.capture_output
+  #       @server.send_output([server_client], "yo")
+  #       expect(mock_client.capture_output.chomp).to eq "yo"
+  #     end
+  #   end
+  # end
 
 end

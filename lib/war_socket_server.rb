@@ -37,7 +37,7 @@ class WarSocketServer
     }
   end
 
-  def add_new_client(player_name)
+  def add_new_client(player_name = "random_player") #This is adding a third player?
     client = setup_client(player_name)
     pending_clients << client
     
@@ -46,13 +46,11 @@ class WarSocketServer
     client
 
   rescue IO::WaitReadable, Errno::EINTR
-    puts "No client to accept"
   end
 
   def new_game_if_possible
 
     return unless pending_clients.count == CLIENTS_PER_GAME
-    clients.each { |client| client[:socket].puts "War is starting..." }
 
     selected_clients =[clients[0], clients[1]]
     create_game(selected_clients)
@@ -92,18 +90,30 @@ class WarSocketServer
 
   end
 
-  def run_round(game) # <- should start loop
-    game.play_round if ready?
+  def run_round(game)
+    if ready?(game)
+      puts(game.play_round)
+      selected_clients = game_clients[game]
+      selected_clients.each do |client|
+        client[:ready] = false
+        client[:message_given] = false
+      end
+    end
   end
 
-  def ready?
-    clients.each do |client|
-      client[:socket].puts "Are you ready?" unless client[:message_given]
+  def ready?(game)
+    selected_clients = game_clients[game]
+    selected_clients.each do |client|
+      send_output([client], "Are you ready:") unless client[:message_given]
       client[:message_given] = true
-      client[:ready] = true unless get_input(client).nil?
+
+      next if get_input(client).nil?
+      client[:ready] = true
+      send_output([client], "Confirmation received!")
+
     end
 
-    return clients.all? { |h| h[:ready] == true }
+    return selected_clients.all? { |h| h[:ready] == true }
   end
 
   def game_over?(game)
