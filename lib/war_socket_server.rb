@@ -74,14 +74,19 @@ class WarSocketServer
     end
 
     game.play_round if clients.all? { |h| h[:ready] == true }
-    
-    unless game.winner.nil?
-      clients.each do |client|
-        client[:socket].puts "Winner: #{game.winner.name}"
-      end
-      stop
-    end
+    # game_over?(game)
+
   end
+
+  # def game_over?(game)
+  #   return false if game.winner.nil?
+
+  #   clients.each do |client|
+  #     client[:socket].puts "Winner: #{game.winner.name}"
+  #   end
+
+  #   stop
+  # end
 
   def stop
     @server.close if @server
