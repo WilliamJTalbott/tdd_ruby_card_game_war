@@ -3,90 +3,116 @@ require_relative "war_game"
 
 class WarSocketServer
 
+  attr_accessor :pending_clients, :game_clients, :server, :games
+  attr_reader :port_number
+
   CLIENTS_PER_GAME = 2
 
   def initialize
-    @names = []
-  end
+    @pending_clients = []
+    @game_clients = {}
+    @server = nil
+    @port_number = 3336
 
-  def port_number
-    3336
-  end
-
-  def games
-    @games ||= []
   end
 
   def start
-    @server = TCPServer.new(port_number)
+    self.server = TCPServer.new(port_number)
   end
 
   def clients
-    @clients ||= []
+    pending_clients + games.flat_map { |game| game_clients[game] }
   end
 
-  def accept_new_client(player_name)
-    client = {
-      socket: @server.accept_nonblock, #TCP SOCKET CLASS
+  def games
+    game_clients.keys
+  end
+
+  def setup_client(player_name)
+    {
+      socket: server.accept_nonblock, #TCP SOCKET CLASS
       name: player_name,
       ready: false,
       message_given: false
     }
-    
-    clients << client
+  end
 
+  def add_new_client(player_name)
+    client = setup_client(player_name)
+    pending_clients << client
+    
     # associate player and client
     client[:socket].puts "Welcome to War!"
+    client
+
   rescue IO::WaitReadable, Errno::EINTR
     puts "No client to accept"
   end
 
-  def create_game_if_possible
+  def new_game_if_possible
 
-    return unless clients.count == CLIENTS_PER_GAME
-
+    return unless pending_clients.count == CLIENTS_PER_GAME
     clients.each { |client| client[:socket].puts "War is starting..." }
 
-    game = WarGame.new(clients[0][:name], clients[1][:name])
+    selected_clients =[clients[0], clients[1]]
+    create_game(selected_clients)
+    
+  end
+
+  def create_game(selected_clients)
+    send_output(selected_clients, "War is starting...")
+    names = selected_clients.map { |client| client[:name] }
+    game = WarGame.new(*names)
+    game_clients[game] = selected_clients
     game.start
-
-    games << game
-
     game
-
   end
 
   def get_input(client)
+    sleep(0.2)
     socket = client[:socket]
-    input = IO.select([socket], nil, nil, 0)
-    return nil unless input
+    socket.read_nonblock(1000)
+  rescue
+    nil
+  end
 
-    socket.gets
-    
+  def send_output(client_list, string)
+    Array(client_list).each do |client|
+      client[:socket].puts string
+    end
   end
 
   def run_game(game)
 
+    until game_over?(game)
+      run_round(game)
+    end
+
+    stop
+
+  end
+
+  def run_round(game) # <- should start loop
+    game.play_round if ready?
+  end
+
+  def ready?
     clients.each do |client|
       client[:socket].puts "Are you ready?" unless client[:message_given]
       client[:message_given] = true
       client[:ready] = true unless get_input(client).nil?
     end
 
-    game.play_round if clients.all? { |h| h[:ready] == true }
-    # game_over?(game)
-
+    return clients.all? { |h| h[:ready] == true }
   end
 
-  # def game_over?(game)
-  #   return false if game.winner.nil?
+  def game_over?(game)
+    return false unless game.winner
 
-  #   clients.each do |client|
-  #     client[:socket].puts "Winner: #{game.winner.name}"
-  #   end
-
-  #   stop
-  # end
+    selected_clients = game_clients[game]
+    send_output(selected_clients, "#{game.winner.name} is the winner!")
+    true
+  end
 
   def stop
     @server.close if @server

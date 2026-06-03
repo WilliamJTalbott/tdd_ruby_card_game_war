@@ -5,7 +5,7 @@ while true do
   output = ""
   until output != ""
     begin
-      sleep(0.1)
+      sleep(0.2)
       output = socket.read_nonblock(1000).chomp # not gets which blocks
     rescue IO::WaitReadable
     end
