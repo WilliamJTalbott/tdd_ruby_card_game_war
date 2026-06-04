@@ -28,21 +28,33 @@ class WarSocketServer
     game_clients.keys
   end
 
-  def setup_client(player_name)
+  def setup_client
     {
       socket: server.accept_nonblock, #TCP SOCKET CLASS
-      name: player_name,
+      name: nil,
       ready: false,
       message_given: false
     }
   end
 
-  def add_new_client(player_name = "random_player") #This is adding a third player?
-    client = setup_client(player_name)
-    pending_clients << client
+  def get_client_name(client)
+    until client[:name]
+      input = get_input(client).chomp
+      next unless input.match?(/^[a-z]{3}$/i)
+      client[:name] = input
+    end  
+  end
+
+  def add_new_client()
+    socket = server.accept_nonblock
     
-    send_output([client], "Welcome to War!")
-    client
+
+    # client = setup_client
+    # get_client_name(client)
+    # pending_clients << client
+    
+    # send_output([client], "Welcome to War!")
+    # client
 
   rescue IO::WaitReadable, Errno::EINTR
   end
