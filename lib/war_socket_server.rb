@@ -41,8 +41,7 @@ class WarSocketServer
     client = setup_client(player_name)
     pending_clients << client
     
-    # associate player and client
-    client[:socket].puts "Welcome to War!"
+    send_output([client], "Welcome to War!")
     client
 
   rescue IO::WaitReadable, Errno::EINTR
@@ -51,8 +50,7 @@ class WarSocketServer
   def new_game_if_possible
 
     return unless pending_clients.count == CLIENTS_PER_GAME
-
-    selected_clients =[clients[0], clients[1]]
+    selected_clients = [pending_clients[0], pending_clients[1]]
     create_game(selected_clients)
     
   end
@@ -102,6 +100,7 @@ class WarSocketServer
   end
 
   def ready?(game)
+
     selected_clients = game_clients[game]
     selected_clients.each do |client|
       send_output([client], "Are you ready:") unless client[:message_given]

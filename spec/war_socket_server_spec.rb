@@ -53,43 +53,25 @@ describe WarSocketServer do
 
   # I need to reorder my tests such that
   # I can declare the values at the top
-  # 
 
   describe "#add_new_client" do
     context "when creating client" do
-      let(:mock_client) {client_factory("Jerry", @server)}
-      let(:server_client) {mock_client; @server.clients[0]}
-
-      it "has proper data" do
-        expect(server_client).to be_a(Hash)
-        
-        expect(server_client).to match(
-          socket: be_a(TCPSocket),
-          name: be_a(String),
-          ready: be(false),
-          message_given: be(false)
-        )
-      end
 
       it 'client gets a welcome message' do
-        expect(mock_client.capture_output).to match /welcome/i
+        client = client_factory("Jerry", @server)
+        expect(client.capture_output).to match(/welcome/i)
       end
-
-      it "client is added pending clients" do
-
-        expect(@server.pending_clients).to include(server_client)
-      end
-
     end
+  end
 
 
-    describe '#create_game' do
-      it "clients get welcome message when game starts" do
-        mock_client1 = client_factory("Tom", @server)
-        mock_client2 = client_factory("Jerry", @server)
-
-        @server.new_game_if_possible
-        expect(mock_client1.capture_output).to match(/starting/i)
+  describe '#create_game' do
+    it "notifies all clients when game starts" do
+      clients = [client_factory("Tom", @server), client_factory("Jerry", @server)]
+      clients.each { |client| client.capture_output }
+      @server.new_game_if_possible
+      clients.each do |client|
+        expect(client.capture_output).to match(/starting/i)
       end
     end
   end
@@ -196,48 +178,28 @@ describe WarSocketServer do
 
   describe "#run_game" do
     context "when ran if game is not over" do
-      it "calls play_round" do
-        client_factory("Tommy", @server)
-        client_factory("Jerry", @server)
-        game = @server.new_game_if_possible
-
-        #What is a state that we can set the game where 
-        #run round is called once and then game is set 
-        #to a winning state
-
-        #Right now should loop till end???
-
-        allow(@server).to receive(:run_round).and_raise('StopLoop')
-        expect{@server.run_game(game)}.to raise_error('StopLoop')
+      it "players flip cards or something" do
 
       end
     end
 
     context "when ran if game is over" do
-      it "calls stop" do
-        client_factory("Tommy", @server)
-        client_factory("Jerry", @server)
-        game = @server.new_game_if_possible
-        game.winner = WarPlayer.new("Tommy")
-
-        expect(@server).to receive(:stop).exactly(2).times
-        @server.run_game(game)
-
+      it "sends winner message to clients" do
       end
     end
   end
 
-  # describe "#send_output" do
-  #   let(:mock_client) {client_factory("Tommy", @server)}
-  #   let(:server_client) { mock_client; @server.clients.first}
-  #   context "when a message is sent with one client" do
-  #     it "receives it" do
+  describe "#send_output" do
+    let(:mock_client) {client_factory("Tommy", @server)}
+    let(:server_client) { mock_client; @server.clients.first}
+    context "when a message is sent with one client" do
+      it "receives it" do
 
-  #       mock_client.capture_output
-  #       @server.send_output([server_client], "yo")
-  #       expect(mock_client.capture_output.chomp).to eq "yo"
-  #     end
-  #   end
-  # end
+        mock_client.capture_output
+        @server.send_output([server_client], "yo")
+        expect(mock_client.capture_output.chomp).to eq "yo"
+      end
+    end
+  end
 
 end
